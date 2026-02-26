@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Plateforme de Priorisation IoT — Analyse et priorisation des vulnérabilités CVE pour routeurs">
+    <title>{% block title %}IoT Shield — Priorisation des Vulnérabilités{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('dashboard') }}" class="nav-brand">
+                <span class="nav-icon">🛡️</span>
+                <span class="nav-title">IoT Shield</span>
+                <span class="nav-subtitle">Priorisation des Vulnérabilités</span>
+            </a>
+            <div class="nav-actions">
+                <span class="nav-scope">🌐 Routeurs</span>
+                <form action="{{ url_for('sync') }}" method="POST" class="sync-form">
+                    <button type="submit" class="btn btn-sync" title="Synchroniser les CVE">
+                        <span class="sync-icon">⟳</span> Synchroniser
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">
+                {{ message }}
+                <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>IoT Shield — Plateforme de Priorisation IoT</p>
+            <p class="footer-sources">
+                Sources : <a href="https://nvd.nist.gov/" target="_blank">NVD (NIST)</a> •
+                <a href="https://www.first.org/epss/" target="_blank">EPSS (FIRST)</a> •
+                <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank">KEV (CISA)</a>
+            </p>
+            <p class="footer-standards">Conformité : ETSI EN 303 645 • NISTIR 8259A</p>
+        </div>
+    </footer>
+
+    <script>
+        // Auto-close flash messages
+        document.querySelectorAll('.flash').forEach(el => {
+            setTimeout(() => el.style.opacity = '0', 5000);
+            setTimeout(() => el.remove(), 5500);
+        });
+    </script>
+</body>
+
+</html>

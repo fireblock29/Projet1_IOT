@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}IoT Shield — {{ cve.id }}{% endblock %}
+
+{% block content %}
+<div class="detail-page">
+    <!-- Navigation retour -->
+    <a href="{{ url_for('dashboard') }}" class="back-link" id="backLink">← Retour au tableau de bord</a>
+
+    <!-- En-tête CVE -->
+    <header class="detail-header">
+        <div class="detail-title-row">
+            <h1 class="detail-title" id="cveTitle">{{ cve.id }}</h1>
+            <span class="badge badge-{{ cve.severity|lower|replace('é', 'e') }} badge-lg">
+                {{ cve.severity }}
+            </span>
+            {% if cve.kev %}
+            <span class="badge badge-kev badge-lg">⚡ EXPLOITATION ACTIVE</span>
+            {% endif %}
+        </div>
+        <p class="detail-published">Publié le {{ cve.published[:10] if cve.published else 'N/A' }}</p>
+    </header>
+
+    <!-- Scores -->
+    <section class="scores-section">
+        <div class="score-card score-card-risk">
+            <h3>Score de Risque Global</h3>
+            <div class="gauge-container">
+                <svg class="gauge" viewBox="0 0 120 120">
+                    <circle class="gauge-bg" cx="60" cy="60" r="50" />
+                    <circle class="gauge-fill gauge-color-{{ cve.severity|lower|replace('é', 'e') }}" cx="60" cy="60"
+                        r="50" stroke-dasharray="{{ (cve.risk_score / 10 * 314)|int }} 314" />
+                </svg>
+                <span class="gauge-value">{{ cve.risk_score }}</span>
+                <span class="gauge-label">/10</span>
+            </div>
+        </div>
+        <div class="score-card">
+            <h3>CVSS</h3>
+            <div class="score-big">{{ cve.cvss_score }}</div>
+            <p class="score-detail">{{ cve.cvss_version }}</p>
+            {% if cve.cvss_vector %}
+            <code class="vector-string">{{ cve.cvss_vector }}</code>
+            {% endif %}
+        </div>
+        <div class="score-card">
+            <h3>EPSS</h3>
+            <div class="score-big">{{ "%.2f"|format(cve.epss_score * 100) }}%</div>
+            <p class="score-detail">Probabilité d'exploitation à 30 jours</p>
+            <div class="epss-bar">
+                <div class="epss-fill" style="width: {{ (cve.epss_score * 100)|int }}%"></div>
+            </div>
+        </div>
+        <div class="score-card">
+            <h3>KEV (CISA)</h3>
+            {% if cve.kev %}
+            <div class="score-big kev-yes">⚡ OUI</div>
+            <p class="score-detail">Ajouté le {{ cve.kev_date_added or 'N/A' }}</p>
+            <p class="kev-warning">Exploitation active confirmée</p>
+            {% else %}
+            <div class="score-big kev-no">NON</div>
+            <p class="score-detail">Non présent dans le catalogue</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Description technique -->
+    <section class="info-section">
+        <h2>📝 Description technique</h2>
+        <div class="info-card">
+            <p class="description-text">{{ cve.description or 'Aucune description disponible.' }}</p>
+        </div>
+    </section>
+
+    <!-- Catégories CWE -->
+    {% if cve.cwe %}
+    <section class="info-section">
+        <h2>🏷️ Catégories CWE</h2>
+        <div class="cwe-tags">
+            {% for cwe in cve.cwe %}
+            <a href="https://cwe.mitre.org/data/definitions/{{ cwe.replace('CWE-', '') }}.html" target="_blank"
+                class="cwe-tag" id="cwe-{{ cwe }}">
+                {{ cwe }}
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Justification du risque -->
+    <section class="info-section">
+        <h2>📊 Analyse du Risque</h2>
+        <div class="info-card justification-card">
+            <pre class="justification-text">{{ cve.justification }}</pre>
+        </div>
+    </section>
+
+    <!-- Mesures de mitigation -->
+    <section class="info-section">
+        <h2>🔧 Mesures de Mitigation</h2>
+        {% for m in mitigations %}
+        <div class="mitigation-card">
+            <div class="mitigation-header">
+                <span class="mitigation-cwe">{{ m.cwe }}</span>
+                <h3 class="mitigation-title">{{ m.title }}</h3>
+            </div>
+            <div class="mitigation-detail">
+                {{ m.detail | replace('\n', '<br>') | safe }}
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+
+    <!-- Conformité -->
+    <section class="info-section">
+        <h2>📜 Références de Conformité</h2>
+        <div class="compliance-grid">
+            <div class="compliance-card">
+                <h3>ETSI EN 303 645</h3>
+                <p class="compliance-desc">Norme européenne de cybersécurité pour les dispositifs IoT grand public.</p>
+                <ul class="compliance-list">
+                    <li><strong>5.1</strong> — Pas de mots de passe par défaut universels</li>
+                    <li><strong>5.2</strong> — Mécanisme de gestion des rapports de vulnérabilités</li>
+                    <li><strong>5.3</strong> — Mise à jour logicielle sécurisée</li>
+                    <li><strong>5.4</strong> — Stockage sécurisé des paramètres de sécurité</li>
+                    <li><strong>5.5</strong> — Communications sécurisées</li>
+                    <li><strong>5.6</strong> — Minimisation des surfaces d'attaque</li>
+                </ul>
+                <a href="https://www.etsi.org/deliver/etsi_en/303600_303699/303645/02.01.01_60/en_303645v020101p.pdf"
+                    target="_blank" class="compliance-link">Consulter la norme →</a>
+            </div>
+            <div class="compliance-card">
+                <h3>NISTIR 8259A</h3>
+                <p class="compliance-desc">Capacités de cybersécurité de base pour les appareils IoT (NIST).</p>
+                <ul class="compliance-list">
+                    <li><strong>Identification</strong> — Identification unique de l'appareil</li>
+                    <li><strong>Configuration</strong> — Configuration logique de l'appareil</li>
+                    <li><strong>Protection des données</strong> — Chiffrement et intégrité</li>
+                    <li><strong>Accès logique</strong> — Contrôle d'accès aux interfaces</li>
+                    <li><strong>Mise à jour</strong> — Capacité de mise à jour sécurisée</li>
+                    <li><strong>Journalisation</strong> — Capacité de cybersécurité consciente</li>
+                </ul>
+                <a href="https://csrc.nist.gov/publications/detail/nistir/8259a/final" target="_blank"
+                    class="compliance-link">Consulter le rapport →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Références -->
+    {% if cve.references %}
+    <section class="info-section">
+        <h2>🔗 Références</h2>
+        <div class="references-list">
+            {% for ref in cve.references %}
+            <a href="{{ ref }}" target="_blank" class="reference-link">{{ ref }}</a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

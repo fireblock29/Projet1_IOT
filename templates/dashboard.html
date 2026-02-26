@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}IoT Shield — Tableau de Bord{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Statistiques -->
+    <section class="stats-grid">
+        <div class="stat-card stat-total">
+            <div class="stat-icon">📊</div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.total }}</span>
+                <span class="stat-label">Total CVE</span>
+            </div>
+        </div>
+        <div class="stat-card stat-critique">
+            <div class="stat-icon">🔴</div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.critique }}</span>
+                <span class="stat-label">Critiques</span>
+            </div>
+        </div>
+        <div class="stat-card stat-eleve">
+            <div class="stat-icon">🟠</div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.eleve }}</span>
+                <span class="stat-label">Élevées</span>
+            </div>
+        </div>
+        <div class="stat-card stat-moyen">
+            <div class="stat-icon">🟡</div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.moyen }}</span>
+                <span class="stat-label">Moyennes</span>
+            </div>
+        </div>
+        <div class="stat-card stat-faible">
+            <div class="stat-icon">🟢</div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.faible }}</span>
+                <span class="stat-label">Faibles</span>
+            </div>
+        </div>
+        <div class="stat-card stat-kev">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.kev_count }}</span>
+                <span class="stat-label">Dans KEV</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filtres et Recherche -->
+    <section class="filters-section">
+        <form method="GET" action="{{ url_for('dashboard') }}" class="filters-form">
+            <div class="search-group">
+                <input type="text" name="search" placeholder="🔍 Rechercher une CVE (ID ou mot-clé)..."
+                    value="{{ search }}" class="search-input" id="searchInput">
+            </div>
+            <div class="filter-group">
+                <select name="severity" class="filter-select" id="severityFilter">
+                    <option value="">Toutes les sévérités</option>
+                    <option value="CRITIQUE" {% if severity_filter=='CRITIQUE' %}selected{% endif %}>🔴 Critique
+                    </option>
+                    <option value="ÉLEVÉ" {% if severity_filter=='ÉLEVÉ' %}selected{% endif %}>🟠 Élevé</option>
+                    <option value="MOYEN" {% if severity_filter=='MOYEN' %}selected{% endif %}>🟡 Moyen</option>
+                    <option value="FAIBLE" {% if severity_filter=='FAIBLE' %}selected{% endif %}>🟢 Faible</option>
+                </select>
+                <select name="sort" class="filter-select" id="sortSelect">
+                    <option value="risk_score" {% if sort_by=='risk_score' %}selected{% endif %}>Tri : Score de Risque
+                    </option>
+                    <option value="cvss" {% if sort_by=='cvss' %}selected{% endif %}>Tri : CVSS</option>
+                    <option value="epss" {% if sort_by=='epss' %}selected{% endif %}>Tri : EPSS</option>
+                    <option value="id" {% if sort_by=='id' %}selected{% endif %}>Tri : ID</option>
+                </select>
+                <select name="order" class="filter-select" id="orderSelect">
+                    <option value="desc" {% if sort_order=='desc' %}selected{% endif %}>↓ Décroissant</option>
+                    <option value="asc" {% if sort_order=='asc' %}selected{% endif %}>↑ Croissant</option>
+                </select>
+                <label class="kev-toggle">
+                    <input type="checkbox" name="kev_only" value="1" {% if kev_only=='1' %}checked{% endif %}
+                        onchange="this.form.submit()">
+                    <span class="kev-toggle-label">⚡ KEV uniquement</span>
+                </label>
+                <button type="submit" class="btn btn-filter" id="applyFilters">Appliquer</button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-reset" id="resetFilters">Réinitialiser</a>
+            </div>
+        </form>
+    </section>
+
+    <!-- Tableau des CVE -->
+    <section class="table-section">
+        {% if cves %}
+        <div class="table-info">
+            <span>{{ cves|length }} vulnérabilité{{ 's' if cves|length > 1 else '' }} affichée{{ 's' if cves|length > 1
+                else '' }}</span>
+        </div>
+        <div class="table-wrapper">
+            <table class="cve-table" id="cveTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Score Global</th>
+                        <th>Sévérité</th>
+                        <th>CVSS</th>
+                        <th>EPSS</th>
+                        <th>KEV</th>
+                        <th>Description</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cve in cves %}
+                    <tr class="cve-row severity-{{ cve.severity|lower|replace('é', 'e') }}" id="row-{{ cve.id }}">
+                        <td class="cell-id">
+                            <a href="{{ url_for('detail', cve_id=cve.id) }}">{{ cve.id }}</a>
+                        </td>
+                        <td class="cell-score">
+                            <div class="score-bar">
+                                <div class="score-fill score-fill-{{ cve.severity|lower|replace('é', 'e') }}"
+                                    style="width: {{ (cve.risk_score / 10 * 100)|int }}%"></div>
+                                <span class="score-value">{{ cve.risk_score }}</span>
+                            </div>
+                        </td>
+                        <td class="cell-severity">
+                            <span class="badge badge-{{ cve.severity|lower|replace('é', 'e') }}">
+                                {{ cve.severity }}
+                            </span>
+                        </td>
+                        <td class="cell-cvss">{{ cve.cvss_score }}</td>
+                        <td class="cell-epss">{{ "%.2f%%"|format(cve.epss_score * 100) }}</td>
+                        <td class="cell-kev">
+                            {% if cve.kev %}
+                            <span class="badge badge-kev" title="Exploitation active confirmée (CISA)">⚡ OUI</span>
+                            {% else %}
+                            <span class="badge badge-no-kev">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="cell-desc">{{ cve.description[:120] }}{% if cve.description|length > 120 %}…{% endif
+                            %}</td>
+                        <td class="cell-action">
+                            <a href="{{ url_for('detail', cve_id=cve.id) }}" class="btn btn-detail"
+                                id="detail-{{ cve.id }}">Détails →</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📡</div>
+            <h2>Aucune vulnérabilité trouvée</h2>
+            {% if search or severity_filter %}
+            <p>Aucun résultat pour les filtres actuels. <a href="{{ url_for('dashboard') }}">Réinitialiser les
+                    filtres</a>.</p>
+            {% else %}
+            <p>Lancez une synchronisation pour collecter les CVE depuis les bases de données publiques.</p>
+            <form action="{{ url_for('sync') }}" method="POST">
+                <button type="submit" class="btn btn-sync btn-lg" id="syncButton">⟳ Lancer la Synchronisation</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
