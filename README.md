@@ -54,6 +54,7 @@ python app.py
 ```
 
 L'application sera accessible sur **http://localhost:5000**.
+Si le port est déjà pris et nécessite d'être modifié, cela se fait directement dans le fichier `config.py`, ligne 45 : `FLASK_PORT = 5000`. 
 
 ### Collecte des données
 
@@ -80,7 +81,7 @@ python collector.py
 docker build -t iot-shield .
 
 # Lancer le conteneur
-docker run -p 5000:5000 iot-shield
+docker run -p 5000:5000 iot-shield #À adapter si le port est modifié
 ```
 
 ## Score de Risque Global
